@@ -10,8 +10,8 @@ namespace GameUtil.Editor
     public class SingleTweenDrawer : PropertyDrawerBase
     {
         private GUIContent mGUIContent;
-        
-        public override void OnGUI(Rect position,  SerializedProperty property, GUIContent label)
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             Init(position);
             if (mGUIContent == null)
@@ -19,30 +19,37 @@ namespace GameUtil.Editor
             var name = property.FindPropertyRelative("Name");
             var addItemType = property.FindPropertyRelative(nameof(SingleTween.AddItemType));
             var duration = property.FindPropertyRelative(nameof(SingleTween.Duration));
+            var loopCount = property.FindPropertyRelative(nameof(SingleTween.LoopCount));
+            var loopType = property.FindPropertyRelative(nameof(SingleTween.LoopType));
+            
             var itemLinkType = property.FindPropertyRelative(nameof(SingleTween.ItemLinkType));
             var atPosition = property.FindPropertyRelative(nameof(SingleTween.AtPosition));
-            var itemType = (SingleTween.ItemType) addItemType.intValue;
-            var linkType = (SingleTween.LinkType) itemLinkType.intValue;
-            
+            var itemType = (SingleTween.ItemType)addItemType.intValue;
+            var linkType = (SingleTween.LinkType)itemLinkType.intValue;
+
             //name + itemType + details
             bool isError = false;
-            string shortDes = name.stringValue + (!string.IsNullOrEmpty(name.stringValue) ? " " + itemType : itemType.ToString()) + " ";
+            string shortDes = name.stringValue +
+                              (!string.IsNullOrEmpty(name.stringValue) ? " " + itemType : itemType.ToString()) + " ";
             switch (itemType)
             {
                 case SingleTween.ItemType.Tweener:
-                    shortDes += $"{linkType}{(linkType == SingleTween.LinkType.Insert ? " at: " + atPosition.floatValue : "")} duration: {duration.floatValue}";
+                    shortDes +=
+                        $"{linkType}{(linkType == SingleTween.LinkType.Insert ? " at: " + atPosition.floatValue : "")} duration: {duration.floatValue}";
                     break;
                 case SingleTween.ItemType.Delay:
                     shortDes += $"duration: {duration.floatValue}";
                     break;
                 case SingleTween.ItemType.Callback:
-                    shortDes += $"{linkType}{(linkType == SingleTween.LinkType.Insert ? " at: " + atPosition.floatValue : "")}";
+                    shortDes +=
+                        $"{linkType}{(linkType == SingleTween.LinkType.Insert ? " at: " + atPosition.floatValue : "")}";
                     break;
                 default:
                     shortDes += "ItemType error!";
                     isError = true;
                     break;
             }
+
             mGUIContent.text = shortDes;
             //Draw element
             if (!PropertyField(property, mGUIContent)) return;
@@ -56,6 +63,7 @@ namespace GameUtil.Editor
                 EditorGUI.indentLevel--;
                 return;
             }
+
             switch ((SingleTween.ItemType)addItemType.intValue)
             {
                 case SingleTween.ItemType.Tweener:
@@ -64,18 +72,25 @@ namespace GameUtil.Editor
                     var curve = property.FindPropertyRelative(nameof(SingleTween.Curve));
                     var easeType = property.FindPropertyRelative(nameof(SingleTween.EaseType));
                     var mode = property.FindPropertyRelative(nameof(SingleTween.Mode));
+                    var rotateMode = property.FindPropertyRelative(nameof(SingleTween.RotateMode));
                     var overrideStartStatus = property.FindPropertyRelative(nameof(SingleTween.OverrideStartStatus));
 
                     PropertyField(duration);
+                    PropertyField(loopCount);
+                    if (loopCount.intValue == -1)
+                    {
+                        PropertyField(loopType);
+                    }
                     PropertyField(useCurve);
                     PropertyField(useCurve.boolValue ? curve : easeType);
                     PropertyField(itemLinkType);
-                    if ((SingleTween.LinkType) itemLinkType.intValue == SingleTween.LinkType.Insert)
+                    if ((SingleTween.LinkType)itemLinkType.intValue == SingleTween.LinkType.Insert)
                         PropertyField(atPosition);
 
-                    var oldTweenType = (SingleTween.TweenType) mode.intValue;
+                    var oldTweenType = (SingleTween.TweenType)mode.intValue;
                     PropertyField(mode);
-                    var curTweenType = (SingleTween.TweenType) mode.intValue;
+                    var curTweenType = (SingleTween.TweenType)mode.intValue;
+                    
                     //Change TweenType, maybe need clear or parse component.
                     if (curTweenType != oldTweenType)
                     {
@@ -85,9 +100,14 @@ namespace GameUtil.Editor
                         {
                             case SingleTween.TweenType.Move:
                             case SingleTween.TweenType.Rotate:
+                            {
+                                PropertyField(rotateMode);
+                                break;
+                            }
                             case SingleTween.TweenType.Scale:
                                 //Do not clear
-                                if (curTweenType == SingleTween.TweenType.Move || curTweenType == SingleTween.TweenType.Rotate ||
+                                if (curTweenType == SingleTween.TweenType.Move ||
+                                    curTweenType == SingleTween.TweenType.Rotate ||
                                     curTweenType == SingleTween.TweenType.Scale)
                                     break;
                                 //Try parse
@@ -96,9 +116,22 @@ namespace GameUtil.Editor
                                     if (transform.objectReferenceValue is RectTransform rect)
                                         rectTransform.objectReferenceValue = rect;
                                 }
-
                                 //Clear
                                 transform.objectReferenceValue = null;
+                                break;
+                            case SingleTween.TweenType.Punch:
+                                property.FindPropertyRelative(nameof(SingleTween.ComponentType));
+                                property.FindPropertyRelative(nameof(SingleTween.Punch)).vector3Value = Vector3.zero;
+                                property.FindPropertyRelative(nameof(SingleTween.Vibrato)).intValue = 10;
+                                property.FindPropertyRelative(nameof(SingleTween.Elasticity)).floatValue = 1;
+                                break;
+                            case SingleTween.TweenType.Shake:
+                                property.FindPropertyRelative(nameof(SingleTween.ComponentType));
+                                property.FindPropertyRelative(nameof(SingleTween.Shake)).vector3Value = Vector3.zero;
+                                property.FindPropertyRelative(nameof(SingleTween.Vibrato)).intValue = 10;
+                                property.FindPropertyRelative(nameof(SingleTween.Randomness)).floatValue = 90;
+                                property.FindPropertyRelative(nameof(SingleTween.Snapping)).boolValue = false;
+                                property.FindPropertyRelative(nameof(SingleTween.FadeOut)).floatValue = 0.5f;
                                 break;
                             case SingleTween.TweenType.Image:
                                 property.FindPropertyRelative(nameof(SingleTween.Image)).objectReferenceValue = null;
@@ -107,14 +140,17 @@ namespace GameUtil.Editor
                                 property.FindPropertyRelative(nameof(SingleTween.Text)).objectReferenceValue = null;
                                 break;
                             case SingleTween.TweenType.TextMeshProUGUI:
-                                property.FindPropertyRelative(nameof(SingleTween.TextMeshProUGUI)).objectReferenceValue = null;
+                                property.FindPropertyRelative(nameof(SingleTween.TextMeshProUGUI))
+                                    .objectReferenceValue = null;
                                 break;
                             case SingleTween.TweenType.Canvas:
-                                property.FindPropertyRelative(nameof(SingleTween.CanvasGroup)).objectReferenceValue = null;
+                                property.FindPropertyRelative(nameof(SingleTween.CanvasGroup)).objectReferenceValue =
+                                    null;
                                 break;
                             case SingleTween.TweenType.AnchorPos3D:
                                 //Parse
-                                if (curTweenType == SingleTween.TweenType.Move || curTweenType == SingleTween.TweenType.Rotate ||
+                                if (curTweenType == SingleTween.TweenType.Move ||
+                                    curTweenType == SingleTween.TweenType.Rotate ||
                                     curTweenType == SingleTween.TweenType.Scale)
                                     transform.objectReferenceValue = rectTransform.objectReferenceValue;
                                 rectTransform.objectReferenceValue = null;
@@ -122,31 +158,54 @@ namespace GameUtil.Editor
                         }
                     }
 
-                    switch ((SingleTween.TweenType) mode.intValue)
+                    switch ((SingleTween.TweenType)mode.intValue)
                     {
                         case SingleTween.TweenType.Move:
-                            DrawTweenType(property, nameof(SingleTween.Transform), overrideStartStatus, nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
+                            DrawTweenType(property, nameof(SingleTween.Transform), overrideStartStatus,
+                                nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
                             break;
                         case SingleTween.TweenType.Rotate:
-                            DrawTweenType(property, nameof(SingleTween.Transform), overrideStartStatus, nameof(SingleTween.StartRotation), nameof(SingleTween.EndRotation));
+                            DrawTweenType(property, nameof(SingleTween.Transform), overrideStartStatus,
+                                nameof(SingleTween.StartRotation), nameof(SingleTween.EndRotation));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.RotateMode)));
                             break;
                         case SingleTween.TweenType.Scale:
-                            DrawTweenType(property, nameof(SingleTween.Transform), overrideStartStatus, nameof(SingleTween.StartScale), nameof(SingleTween.EndScale));
+                            DrawTweenType(property, nameof(SingleTween.Transform), overrideStartStatus,
+                                nameof(SingleTween.StartScale), nameof(SingleTween.EndScale));
+                            break;
+                        case SingleTween.TweenType.Punch:
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.ComponentType)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.Punch)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.Vibrato)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.Elasticity)));
+                            break;
+                        case SingleTween.TweenType.Shake:
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.ComponentType)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.Shake)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.Vibrato)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.Randomness)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.Snapping)));
+                            PropertyField(property.FindPropertyRelative(nameof(SingleTween.FadeOut)));
                             break;
                         case SingleTween.TweenType.Image:
-                            DrawTweenType(property, nameof(SingleTween.Image), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            DrawTweenType(property, nameof(SingleTween.Image), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.Text:
-                            DrawTweenType(property, nameof(SingleTween.Text), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            DrawTweenType(property, nameof(SingleTween.Text), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.TextMeshProUGUI:
-                            DrawTweenType(property, nameof(SingleTween.TextMeshProUGUI), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            DrawTweenType(property, nameof(SingleTween.TextMeshProUGUI), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.Canvas:
-                            DrawTweenType(property, nameof(SingleTween.CanvasGroup), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            DrawTweenType(property, nameof(SingleTween.CanvasGroup), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.AnchorPos3D:
-                            DrawTweenType(property, nameof(SingleTween.RectTransform), overrideStartStatus, nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
+                            DrawTweenType(property, nameof(SingleTween.RectTransform), overrideStartStatus,
+                                nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
                             break;
                     }
 
@@ -186,12 +245,13 @@ namespace GameUtil.Editor
                 case SingleTween.ItemType.Callback:
                 {
                     PropertyField(itemLinkType);
-                    if ((SingleTween.LinkType) itemLinkType.intValue == SingleTween.LinkType.Insert)
+                    if ((SingleTween.LinkType)itemLinkType.intValue == SingleTween.LinkType.Insert)
                         PropertyField(atPosition);
                     PropertyField(property.FindPropertyRelative(nameof(SingleTween.Callback)));
                 }
                     break;
             }
+
             EditorGUI.indentLevel--;
         }
 
@@ -199,58 +259,91 @@ namespace GameUtil.Editor
         {
             mAllHeight = 0;
             AddPropertyHeight(property);
-            if(!property.isExpanded) return mAllHeight - 2;
-            
+            if (!property.isExpanded) return mAllHeight - 2;
+
             var name = property.FindPropertyRelative("Name");
             var addItemType = property.FindPropertyRelative(nameof(SingleTween.AddItemType));
             AddPropertyHeight(name);
             AddPropertyHeight(addItemType);
-            switch ((SingleTween.ItemType) addItemType.intValue)
+            
+            switch ((SingleTween.ItemType)addItemType.intValue)
             {
                 case SingleTween.ItemType.Tweener:
                 {
                     var duration = property.FindPropertyRelative(nameof(SingleTween.Duration));
+                    var loopCount = property.FindPropertyRelative(nameof(SingleTween.LoopCount));
+                    var loopType = property.FindPropertyRelative(nameof(SingleTween.LoopType));
+                    if (loopCount.intValue == -1)
+                    {
+                        AddPropertyHeight(loopType);
+                    }
                     var useCurve = property.FindPropertyRelative(nameof(SingleTween.UseCurve));
                     var curve = property.FindPropertyRelative(nameof(SingleTween.Curve));
                     var easeType = property.FindPropertyRelative(nameof(SingleTween.EaseType));
                     var itemLinkType = property.FindPropertyRelative(nameof(SingleTween.ItemLinkType));
                     var mode = property.FindPropertyRelative(nameof(SingleTween.Mode));
+                    var rotateMode = property.FindPropertyRelative(nameof(SingleTween.RotateMode));
                     var overrideStartStatus = property.FindPropertyRelative(nameof(SingleTween.OverrideStartStatus));
 
                     AddPropertyHeight(duration);
+                    AddPropertyHeight(loopCount);
                     AddPropertyHeight(useCurve);
                     AddPropertyHeight(useCurve.boolValue ? curve : easeType);
                     AddPropertyHeight(itemLinkType);
-                    if ((SingleTween.LinkType) itemLinkType.intValue == SingleTween.LinkType.Insert)
+                    if ((SingleTween.LinkType)itemLinkType.intValue == SingleTween.LinkType.Insert)
                         AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.AtPosition)));
 
                     AddPropertyHeight(mode);
+                    AddPropertyHeight(rotateMode);
 
-                    switch ((SingleTween.TweenType) mode.intValue)
+                    switch ((SingleTween.TweenType)mode.intValue)
                     {
                         case SingleTween.TweenType.Move:
-                            AddTweenType(property, nameof(SingleTween.Transform), overrideStartStatus, nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
+                            AddTweenType(property, nameof(SingleTween.Transform), overrideStartStatus,
+                                nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
                             break;
                         case SingleTween.TweenType.Rotate:
-                            AddTweenType(property, nameof(SingleTween.Transform), overrideStartStatus, nameof(SingleTween.StartRotation), nameof(SingleTween.EndRotation));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.RotateMode)));
+                            AddTweenType(property, nameof(SingleTween.Transform), overrideStartStatus,
+                                nameof(SingleTween.StartRotation), nameof(SingleTween.EndRotation));
                             break;
                         case SingleTween.TweenType.Scale:
-                            AddTweenType(property, nameof(SingleTween.Transform), overrideStartStatus, nameof(SingleTween.StartScale), nameof(SingleTween.EndScale));
+                            AddTweenType(property, nameof(SingleTween.Transform), overrideStartStatus,
+                                nameof(SingleTween.StartScale), nameof(SingleTween.EndScale));
+                            break;
+                        case SingleTween.TweenType.Shake:
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.ComponentType)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Shake)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Vibrato)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Randomness)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Snapping)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.FadeOut)));
+                            break;
+                        case SingleTween.TweenType.Punch:
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.ComponentType)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Punch)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Vibrato)));
+                            AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Elasticity)));
                             break;
                         case SingleTween.TweenType.Image:
-                            AddTweenType(property, nameof(SingleTween.Image), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            AddTweenType(property, nameof(SingleTween.Image), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.Text:
-                            AddTweenType(property, nameof(SingleTween.Text), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            AddTweenType(property, nameof(SingleTween.Text), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.TextMeshProUGUI:
-                            AddTweenType(property, nameof(SingleTween.TextMeshProUGUI), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            AddTweenType(property, nameof(SingleTween.TextMeshProUGUI), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.Canvas:
-                            AddTweenType(property, nameof(SingleTween.CanvasGroup), overrideStartStatus, nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
+                            AddTweenType(property, nameof(SingleTween.CanvasGroup), overrideStartStatus,
+                                nameof(SingleTween.StartAlpha), nameof(SingleTween.EndAlpha));
                             break;
                         case SingleTween.TweenType.AnchorPos3D:
-                            AddTweenType(property, nameof(SingleTween.RectTransform), overrideStartStatus, nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
+                            AddTweenType(property, nameof(SingleTween.RectTransform), overrideStartStatus,
+                                nameof(SingleTween.StartPos), nameof(SingleTween.EndPos));
                             break;
                     }
 
@@ -265,16 +358,18 @@ namespace GameUtil.Editor
                 {
                     var itemLinkType = property.FindPropertyRelative(nameof(SingleTween.ItemLinkType));
                     AddPropertyHeight(itemLinkType);
-                    if ((SingleTween.LinkType) itemLinkType.intValue == SingleTween.LinkType.Insert)
+                    if ((SingleTween.LinkType)itemLinkType.intValue == SingleTween.LinkType.Insert)
                         AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.AtPosition)));
                     AddPropertyHeight(property.FindPropertyRelative(nameof(SingleTween.Callback)));
                 }
                     break;
             }
+
             return mAllHeight - 2;
         }
 
-        private void DrawTweenType(SerializedProperty property, string component, SerializedProperty overrideStartStatus, string start, string end)
+        private void DrawTweenType(SerializedProperty property, string component,
+            SerializedProperty overrideStartStatus, string start, string end)
         {
             PropertyField(property.FindPropertyRelative(component));
             PropertyField(overrideStartStatus);
@@ -282,8 +377,9 @@ namespace GameUtil.Editor
                 PropertyField(property.FindPropertyRelative(start));
             PropertyField(property.FindPropertyRelative(end));
         }
-        
-        private void AddTweenType(SerializedProperty property, string component, SerializedProperty overrideStartStatus, string start, string end)
+
+        private void AddTweenType(SerializedProperty property, string component, SerializedProperty overrideStartStatus,
+            string start, string end)
         {
             AddPropertyHeight(property.FindPropertyRelative(component));
             AddPropertyHeight(overrideStartStatus);
@@ -291,9 +387,10 @@ namespace GameUtil.Editor
                 AddPropertyHeight(property.FindPropertyRelative(start));
             AddPropertyHeight(property.FindPropertyRelative(end));
         }
-        
-        
-        private const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
+
+
+        private const BindingFlags bindingFlags =
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
 
         //根据SerializedProperty查找到其对应的对象引用
         public static object GetObject(SerializedProperty property)
@@ -311,11 +408,13 @@ namespace GameUtil.Editor
                     obj = (obj as IList)[index];
                 }
             }
+
             return obj;
         }
-        
+
         //由于Type.GetField似乎不会查找到父类的私有字段，所以循环查找一下
-        public static FieldInfo GetFieldInfoIncludeBase(Type type, string fieldName, BindingFlags bindingFlags = bindingFlags)
+        public static FieldInfo GetFieldInfoIncludeBase(Type type, string fieldName,
+            BindingFlags bindingFlags = bindingFlags)
         {
             FieldInfo fieldInfo = null;
             while (fieldInfo == null && type != null)
@@ -323,6 +422,7 @@ namespace GameUtil.Editor
                 fieldInfo = type.GetField(fieldName, bindingFlags);
                 type = type.BaseType;
             }
+
             return fieldInfo;
         }
     }

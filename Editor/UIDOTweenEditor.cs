@@ -92,7 +92,8 @@ namespace GameUtil.Editor
             list.serializedProperty.InsertArrayElementAtIndex(list.count);
             //Is first element, change EaseType to Ease.OutQuad(default)
             if (list.count == 1)
-                list.serializedProperty.GetArrayElementAtIndex(0).FindPropertyRelative(nameof(SingleTween.EaseType)).intValue = (int) Ease.OutQuad;
+                list.serializedProperty.GetArrayElementAtIndex(0)
+                    .FindPropertyRelative(nameof(SingleTween.EaseType)).intValue = (int) Ease.OutQuad;
         }
     }
 }
