@@ -19,7 +19,14 @@ namespace GameUtil.Editor
             var name = property.FindPropertyRelative("Name");
             var addItemType = property.FindPropertyRelative(nameof(SingleTween.AddItemType));
             var duration = property.FindPropertyRelative(nameof(SingleTween.Duration));
+            duration.floatValue = Mathf.Max(duration.floatValue, 0);
+
+            var delay = property.FindPropertyRelative(nameof(SingleTween.Delay));
+            delay.floatValue = Mathf.Max(delay.floatValue, 0);
+
             var loopCount = property.FindPropertyRelative(nameof(SingleTween.LoopCount));
+            loopCount.intValue = Mathf.Max(loopCount.intValue, -1);
+
             var loopType = property.FindPropertyRelative(nameof(SingleTween.LoopType));
             
             var itemLinkType = property.FindPropertyRelative(nameof(SingleTween.ItemLinkType));
@@ -51,7 +58,7 @@ namespace GameUtil.Editor
             }
 
             mGUIContent.text = shortDes;
-            //Draw element
+
             if (!PropertyField(property, mGUIContent)) return;
 
             EditorGUI.indentLevel++;
@@ -68,14 +75,26 @@ namespace GameUtil.Editor
             {
                 case SingleTween.ItemType.Tweener:
                 {
+                    var mode = property.FindPropertyRelative(nameof(SingleTween.Mode));
+                    var easeType = property.FindPropertyRelative(nameof(SingleTween.EaseType));
+                    var rotateMode = property.FindPropertyRelative(nameof(SingleTween.RotateMode));
+                    
                     var useCurve = property.FindPropertyRelative(nameof(SingleTween.UseCurve));
                     var curve = property.FindPropertyRelative(nameof(SingleTween.Curve));
-                    var easeType = property.FindPropertyRelative(nameof(SingleTween.EaseType));
-                    var mode = property.FindPropertyRelative(nameof(SingleTween.Mode));
-                    var rotateMode = property.FindPropertyRelative(nameof(SingleTween.RotateMode));
                     var overrideStartStatus = property.FindPropertyRelative(nameof(SingleTween.OverrideStartStatus));
 
+                    
+                    PropertyField(itemLinkType);
+                    if ((SingleTween.LinkType)itemLinkType.intValue == SingleTween.LinkType.Insert)
+                        PropertyField(atPosition);
+                    
+                    
+                    var oldTweenType = (SingleTween.TweenType)mode.intValue;
+                    PropertyField(mode);
+                    var curTweenType = (SingleTween.TweenType)mode.intValue;
+                    
                     PropertyField(duration);
+                    PropertyField(delay);
                     PropertyField(loopCount);
                     if (loopCount.intValue == -1)
                     {
@@ -83,13 +102,6 @@ namespace GameUtil.Editor
                     }
                     PropertyField(useCurve);
                     PropertyField(useCurve.boolValue ? curve : easeType);
-                    PropertyField(itemLinkType);
-                    if ((SingleTween.LinkType)itemLinkType.intValue == SingleTween.LinkType.Insert)
-                        PropertyField(atPosition);
-
-                    var oldTweenType = (SingleTween.TweenType)mode.intValue;
-                    PropertyField(mode);
-                    var curTweenType = (SingleTween.TweenType)mode.intValue;
                     
                     //Change TweenType, maybe need clear or parse component.
                     if (curTweenType != oldTweenType)
@@ -120,7 +132,7 @@ namespace GameUtil.Editor
                                 transform.objectReferenceValue = null;
                                 break;
                             case SingleTween.TweenType.Punch:
-                                property.FindPropertyRelative(nameof(SingleTween.ComponentType));
+                                property.FindPropertyRelative(nameof(SingleTween.componentType));
                                 property.FindPropertyRelative(nameof(SingleTween.Punch)).vector3Value = Vector3.zero;
                                 property.FindPropertyRelative(nameof(SingleTween.Vibrato)).intValue = 10;
                                 property.FindPropertyRelative(nameof(SingleTween.Elasticity)).floatValue = 1;
